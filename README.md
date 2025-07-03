@@ -2,7 +2,30 @@
 
 A professionally organized collection of **2,053 n8n workflows** with a lightning-fast documentation system that provides instant search, analysis, and browsing capabilities.
 
-## 🚀 **NEW: High-Performance Documentation System**
+## 🚀 **NEW: AI Chat Evaluation - Dual LLM Comparison System**
+
+**🎯 FEATURED WORKFLOW: Compare GPT-3.5 vs Claude-3.5 side-by-side!**
+
+### 🤖 Dual LLM Comparison Features
+- **Parallel AI Evaluation**: GPT-3.5-turbo vs Claude-3.5-Sonnet
+- **6 Evaluation Metrics**: Helpfulness, Accuracy, Clarity, Relevance, Tone, Completeness
+- **Agreement Analysis**: Calculates score differences and agreement levels
+- **Dual Notion Databases**: Side-by-side comparison tables
+- **Performance Tracking**: Identifies which LLM scores higher
+- **Structured Output**: Detailed reasoning from both models
+
+### Quick Start - Dual LLM System
+```bash
+# 1. Set up the workflow (see DUAL_LLM_IMPLEMENTATION_SUMMARY.md)
+# 2. Configure your API keys in n8n (OpenAI + Anthropic)
+# 3. Import the workflow: workflows/AI_Chat_Evaluation_Dual_LLM_Comparison.json
+# 4. Test with: python tests/test_dual_llm_workflow.py
+
+# Webhook endpoint:
+POST http://localhost:5678/webhook/dual-llm-comparison
+```
+
+## 🚀 **High-Performance Documentation System**
 
 **Experience 100x performance improvement over traditional documentation!**
 
@@ -55,6 +78,47 @@ Our intelligent naming system converts technical filenames into readable titles:
 - **After**: `Telegram Webhook Automation`
 - **100% meaningful names** with smart capitalization
 - **Automatic integration detection** from node analysis
+
+---
+
+## 📁 Project Structure
+
+### Organized Directory Layout
+```
+n8n-workflows/
+├── 📂 tools/          # Specialized tools
+│   ├── 📂 notion/     # Notion database management
+│   └── 📂 n8n/        # n8n workflow tools
+├── 📂 docs/           # Documentation
+├── 📂 tests/          # Test files and sample data
+├── 📂 backups/        # Workflow backups
+├── 📂 workflows/      # 2,053 workflow JSON files
+├── 📂 static/         # Web interface assets
+├── 📄 api_server.py   # FastAPI documentation server
+├── 📄 workflow_db.py  # Database management
+├── 📄 run.py          # Application launcher
+└── 📄 README.md       # This file
+```
+
+### Key Directories
+
+#### `/tools/`
+Specialized tools for workflow management:
+- **`notion/`**: Database creation, field configuration, node setup
+- **`n8n/`**: API client, workflow testing, setup assistance
+
+#### `/docs/`
+Complete documentation:
+- **`CURSOR_N8N_GUIDE.md`**: Essential setup guide
+- **`CLAUDE.md`**: Development notes
+
+#### `/tests/`
+Testing and validation:
+- **`test_webhook.py`**: Webhook testing script
+- **`test_sample_data.json`**: Sample data for testing
+
+#### `/backups/`
+Workflow backups and version control
 
 ---
 

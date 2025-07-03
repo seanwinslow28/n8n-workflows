@@ -1,0 +1,401 @@
+{
+  "createdAt": "2025-07-03T14:53:06.801Z",
+  "updatedAt": "2025-07-03T14:53:06.801Z",
+  "id": "SCbZjNc21BRf0QTI",
+  "name": "AI Chat Evaluation_Multiple LLMs",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "8f7c07c4-f36a-4d13-8f96-69ba52cb12a1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e52b4052-aecc-48e1-9848-ad42cde083ba",
+      "name": "Webhook",
+      "webhookId": "8f7c07c4-f36a-4d13-8f96-69ba52cb12a1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the incoming webhook data\nconst incomingData = $input.all()[0].json;\n\n// Process and structure the conversation data\nconst processedData = {\n    // Basic session info - FIXED: ensure sessionId is included\n    sessionId: incomingData.sessionId,\n    timestamp: incomingData.timestamp,\n    userId: incomingData.userId || 'anonymous',\n    duration: incomingData.duration,\n    \n    // Message analysis\n    messageCount: incomingData.messages ? incomingData.messages.length : 0,\n    userMessageCount: incomingData.messages ? incomingData.messages.filter(m => m.role === 'user').length : 0,\n    assistantMessageCount: incomingData.messages ? incomingData.messages.filter(m => m.role === 'assistant').length : 0,\n    \n    // Create full conversation text for AI to analyze\n    conversationText: incomingData.messages ? \n        incomingData.messages.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\\n\\n') : '',\n    \n    // Calculate basic metrics\n    averageUserMessageLength: incomingData.messages ? \n        incomingData.messages\n            .filter(m => m.role === 'user')\n            .reduce((sum, m) => sum + m.content.length, 0) / \n        Math.max(1, incomingData.messages.filter(m => m.role === 'user').length) : 0,\n    \n    averageAssistantMessageLength: incomingData.messages ? \n        incomingData.messages\n            .filter(m => m.role === 'assistant')\n            .reduce((sum, m) => sum + m.content.length, 0) / \n        Math.max(1, incomingData.messages.filter(m => m.role === 'assistant').length) : 0,\n    \n    // Original data for reference\n    originalMessages: incomingData.messages,\n    rawData: incomingData\n};\n\n// Return the processed data\nreturn [{ json: processedData }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "9f17fba6-b565-4226-85dc-ca283af7f352",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Please evaluate this conversation between a user and an AI assistant. Analyze it on 6 criteria (1-10 scale):\n\nConversation to evaluate:\n{{ $json.conversationText }}\n\nAdditional context:\n- Total messages: {{ $json.messageCount }}\n- User messages: {{ $json.userMessageCount }}  \n- AI messages: {{ $json.assistantMessageCount }}\n- Session duration: {{ $json.duration }}ms\n- Session ID: {{ $json.sessionId }}\n\nEvaluate on these criteria (1-10 scale):\n- HELPFULNESS: Did the AI provide useful, actionable assistance?\n- ACCURACY: Were the AI's responses factually correct and reliable?\n- CLARITY: Were responses clear, well-structured, and easy to understand?\n- RELEVANCE: Did responses directly address the user's questions/needs?\n- TONE: Was the AI's tone appropriate, professional, and engaging?\n- COMPLETENESS: Did responses fully address questions without leaving gaps?\n\nReturn as JSON:\n{\n  \"helpfulness\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"accuracy\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"clarity\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"relevance\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"tone\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"completeness\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"overall_score\": X.X,\n  \"key_insights\": \"what the AI did well and key strengths\",\n  \"improvement_suggestions\": \"specific, actionable improvements\",\n  \"conversation_summary\": \"brief summary of the interaction\"\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "e31734e2-b6d6-4077-85f3-70f1a988052a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        360,
+        180
+      ],
+      "id": "78cc64fb-07c9-4c70-9b82-5287cb866e00",
+      "name": "OpenAI Chat Model",
+      "credentials": {}
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        580,
+        220
+      ],
+      "id": "d0033d9c-bedc-4fdd-95d3-27021cd7e6d3",
+      "name": "Calculator"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"helpfulness\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"accuracy\": {\n      \"type\": \"object\", \n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"clarity\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"relevance\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"tone\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"completeness\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"overall_score\": {\"type\": \"number\"},\n    \"key_insights\": {\"type\": \"string\"},\n    \"improvement_suggestions\": {\"type\": \"string\"},\n    \"conversation_summary\": {\"type\": \"string\"}\n  },\n  \"required\": [\"helpfulness\", \"accuracy\", \"clarity\", \"relevance\", \"tone\", \"completeness\", \"overall_score\", \"key_insights\", \"improvement_suggestions\", \"conversation_summary\"]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        820,
+        220
+      ],
+      "id": "bd1e3ec6-1eb8-41f2-b243-04e758659896",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        360
+      ],
+      "id": "b4bce963-fdf9-4344-9a01-9b5f5c787f59",
+      "name": "OpenAI Chat Model1",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "https://www.notion.so/2240a4634b4e80dfb0ceeb829c60d007?v=2240a4634b4e801093ba000ce39a5228&source=copy_link",
+          "mode": "url"
+        },
+        "title": "AI Chat Evaluations",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Session ID|title",
+              "title": "{{ $json.sessionId }}"
+            },
+            {
+              "key": "Helpfulness|number",
+              "numberValue": "={{ $json.output.helpfulness.score }}"
+            },
+            {
+              "key": "Accuracy|number",
+              "numberValue": "={{ $json.output.accuracy.score }}"
+            },
+            {
+              "key": "Clarity|number",
+              "numberValue": "={{ $json.output.clarity.score }}"
+            },
+            {
+              "key": "Relevance|number",
+              "numberValue": "={{ $json.output.relevance.score }}"
+            },
+            {
+              "key": "Tone|number",
+              "numberValue": "={{ $json.output.tone.score }}"
+            },
+            {
+              "key": "Completeness|number",
+              "numberValue": "={{ $json.output.completeness.score }}"
+            },
+            {
+              "key": "Overall Score|number",
+              "numberValue": "={{ $json.output.overall_score }}"
+            },
+            {
+              "key": "Key Insights|rich_text",
+              "textContent": "={{ $json.output.key_insights || \"No insights available\" }}"
+            },
+            {
+              "key": "Improvement Suggestions|rich_text",
+              "textContent": "={{ $json.output.improvement_suggestions || \"No suggestions available\" }}"
+            },
+            {
+              "key": "Conversation Summary|rich_text",
+              "textContent": "={{ $json.output.conversation_summary || \"No summary available\" }}"
+            },
+            {
+              "key": "Timestamp|date",
+              "date": "={{ new Date().toISOString() }}"
+            },
+            {
+              "key": "User ID|rich_text",
+              "textContent": "={{ $json.userId || $json.sessionId || \"anonymous\" }}"
+            },
+            {
+              "key": "Message Count|number",
+              "numberValue": "={{ $json.messageCount }}"
+            },
+            {
+              "key": "Duration (minutes)|number",
+              "numberValue": "={{ Math.round($json.duration / 60000) }}"
+            },
+            {
+              "key": "User Message Count|number",
+              "numberValue": "={{ $json.userMessageCount }}"
+            },
+            {
+              "key": "Assistant Message Count|number",
+              "numberValue": "={{ $json.assistantMessageCount }}"
+            },
+            {
+              "key": "Avg User Msg Length|number",
+              "numberValue": "={{ Math.round($json.averageUserMessageLength) }}"
+            },
+            {
+              "key": "Avg Assistant Msg Length|number",
+              "numberValue": "={{ Math.round($json.averageAssistantMessageLength) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        0
+      ],
+      "id": "e409d552-af9d-4f4c-826f-1af848100d0a",
+      "name": "Create a database page",
+      "credentials": {}
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "localhost:5678",
+            "user-agent": "curl/8.7.1",
+            "accept": "*/*",
+            "content-type": "application/json",
+            "content-length": "452"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "sessionId": "test123",
+            "timestamp": "2025-07-02T10:00:00Z",
+            "userId": "testuser456",
+            "duration": 45000,
+            "messages": [
+              {
+                "role": "user",
+                "content": "Can you help me with JavaScript arrays?"
+              },
+              {
+                "role": "assistant",
+                "content": "Of course! JavaScript arrays are ordered lists of items. You can create them using square brackets like [1, 2, 3] or new Array(). What specific aspect would you like to learn about?"
+              }
+            ]
+          },
+          "webhookUrl": "http://localhost:5678/webhook/chat-evaluation",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "versionId": "83b86804-83bd-4e16-aa25-f7f89c472ffb",
+  "triggerCount": 1,
+  "shared": [
+    {
+      "createdAt": "2025-07-03T14:53:06.822Z",
+      "updatedAt": "2025-07-03T14:53:06.822Z",
+      "role": "workflow:owner",
+      "workflowId": "SCbZjNc21BRf0QTI",
+      "projectId": "tXw8g2QZRmfjjdPp",
+      "project": {
+        "createdAt": "2025-06-28T23:51:23.023Z",
+        "updatedAt": "2025-06-28T23:53:34.695Z",
+        "id": "tXw8g2QZRmfjjdPp",
+        "name": "Sean Winslow <sean.winslow28@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "projectRelations": [
+          {
+            "createdAt": "2025-06-28T23:51:23.023Z",
+            "updatedAt": "2025-06-28T23:51:23.023Z",
+            "role": "project:personalOwner",
+            "userId": "0bcdabdc-10c0-454c-9e2b-a5832f19c512",
+            "projectId": "tXw8g2QZRmfjjdPp",
+            "user": {
+              "createdAt": "2025-06-28T23:51:20.999Z",
+              "updatedAt": "2025-07-02T20:52:43.277Z",
+              "id": "0bcdabdc-10c0-454c-9e2b-a5832f19c512",
+              "email": "sean.winslow28@gmail.com",
+              "firstName": "Sean",
+              "lastName": "Winslow",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-06-28T23:55:42.110Z",
+                "personalization_survey_n8n_version": "1.99.1",
+                "companySize": "personalUser",
+                "companyType": "systems-integrator",
+                "role": "other",
+                "roleOther": "Product Manager",
+                "reportedSource": "youtube"
+              },
+              "settings": {
+                "userActivated": true,
+                "firstSuccessfulWorkflowId": "W4ONMeeFkUUuK9i9",
+                "userActivatedAt": 1751305153912,
+                "easyAIWorkflowOnboarded": true
+              },
+              "role": "global:owner",
+              "disabled": false,
+              "mfaEnabled": false,
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": []
+}

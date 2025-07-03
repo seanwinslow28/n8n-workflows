@@ -1,0 +1,96 @@
+{
+  "createdAt": "2025-07-03T19:30:00.000Z",
+  "updatedAt": "2025-07-03T19:30:00.000Z",
+  "id": "DualLLMComparison",
+  "name": "AI Chat Evaluation - Dual LLM Comparison (GPT vs Claude)",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dual-llm-comparison",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "webhook-node",
+      "name": "Webhook",
+      "webhookId": "dual-llm-comparison"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the incoming webhook data\nconst incomingData = $input.all()[0].json;\n\n// Process and structure the conversation data\nconst processedData = {\n    // Basic session info\n    sessionId: incomingData.sessionId || 'dual_session_' + Date.now(),\n    timestamp: incomingData.timestamp || new Date().toISOString(),\n    userId: incomingData.userId || 'anonymous',\n    duration: incomingData.duration || 0,\n    \n    // Message analysis\n    messageCount: incomingData.messages ? incomingData.messages.length : 0,\n    userMessageCount: incomingData.messages ? incomingData.messages.filter(m => m.role === 'user').length : 0,\n    assistantMessageCount: incomingData.messages ? incomingData.messages.filter(m => m.role === 'assistant').length : 0,\n    \n    // Create full conversation text for AI to analyze\n    conversationText: incomingData.messages ? \n        incomingData.messages.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\\n\\n') : '',\n    \n    // Calculate basic metrics\n    averageUserMessageLength: incomingData.messages ? \n        incomingData.messages\n            .filter(m => m.role === 'user')\n            .reduce((sum, m) => sum + m.content.length, 0) / \n        Math.max(1, incomingData.messages.filter(m => m.role === 'user').length) : 0,\n    \n    averageAssistantMessageLength: incomingData.messages ? \n        incomingData.messages\n            .filter(m => m.role === 'assistant')\n            .reduce((sum, m) => sum + m.content.length, 0) / \n        Math.max(1, incomingData.messages.filter(m => m.role === 'assistant').length) : 0,\n    \n    // Original data for reference\n    originalMessages: incomingData.messages,\n    rawData: incomingData\n};\n\n// Return the processed data\nreturn [{ json: processedData }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "id": "code-processor",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Please evaluate this conversation between a user and an AI assistant. Analyze it on 6 criteria (1-10 scale):\n\nConversation to evaluate:\n{{ $json.conversationText }}\n\nAdditional context:\n- Total messages: {{ $json.messageCount }}\n- User messages: {{ $json.userMessageCount }}  \n- AI messages: {{ $json.assistantMessageCount }}\n- Session duration: {{ $json.duration }}ms\n- Session ID: {{ $json.sessionId }}\n\nEvaluate on these criteria (1-10 scale):\n- HELPFULNESS: Did the AI provide useful, actionable assistance?\n- ACCURACY: Were the AI's responses factually correct and reliable?\n- CLARITY: Were responses clear, well-structured, and easy to understand?\n- RELEVANCE: Did responses directly address the user's questions/needs?\n- TONE: Was the AI's tone appropriate, professional, and engaging?\n- COMPLETENESS: Did responses fully address questions without leaving gaps?\n\nReturn as JSON:\n{\n  \"helpfulness\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"accuracy\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"clarity\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"relevance\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"tone\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"completeness\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"overall_score\": X.X,\n  \"key_insights\": \"what the AI did well and key strengths\",\n  \"improvement_suggestions\": \"specific, actionable improvements\",\n  \"conversation_summary\": \"brief summary of the interaction\"\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [440, -100],
+      "id": "gpt-agent",
+      "name": "GPT Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Please evaluate this conversation between a user and an AI assistant. Analyze it on 6 criteria (1-10 scale):\n\nConversation to evaluate:\n{{ $json.conversationText }}\n\nAdditional context:\n- Total messages: {{ $json.messageCount }}\n- User messages: {{ $json.userMessageCount }}  \n- AI messages: {{ $json.assistantMessageCount }}\n- Session duration: {{ $json.duration }}ms\n- Session ID: {{ $json.sessionId }}\n\nEvaluate on these criteria (1-10 scale):\n- HELPFULNESS: Did the AI provide useful, actionable assistance?\n- ACCURACY: Were the AI's responses factually correct and reliable?\n- CLARITY: Were responses clear, well-structured, and easy to understand?\n- RELEVANCE: Did responses directly address the user's questions/needs?\n- TONE: Was the AI's tone appropriate, professional, and engaging?\n- COMPLETENESS: Did responses fully address questions without leaving gaps?\n\nReturn as JSON:\n{\n  \"helpfulness\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"accuracy\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"clarity\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"relevance\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"tone\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"completeness\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"overall_score\": X.X,\n  \"key_insights\": \"what the AI did well and key strengths\",\n  \"improvement_suggestions\": \"specific, actionable improvements\",\n  \"conversation_summary\": \"brief summary of the interaction\"\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [440, 100],
+      "id": "claude-agent",
+      "name": "Claude Agent"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "GPT Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Claude Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
