@@ -1,0 +1,433 @@
+{
+  "createdAt": "2025-07-03T19:30:00.000Z",
+  "updatedAt": "2025-07-03T19:30:00.000Z",
+  "id": "CompleteDualLLMComparison",
+  "name": "🤖 COMPLETE Dual LLM Comparison System (GPT vs Claude)",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dual-llm-comparison",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "id": "webhook-node",
+      "name": "Webhook",
+      "webhookId": "dual-llm-comparison"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the incoming webhook data\nconst incomingData = $input.all()[0].json;\n\n// Process and structure the conversation data\nconst processedData = {\n    sessionId: incomingData.sessionId || 'dual_session_' + Date.now(),\n    timestamp: incomingData.timestamp || new Date().toISOString(),\n    userId: incomingData.userId || 'anonymous',\n    duration: incomingData.duration || 0,\n    messageCount: incomingData.messages ? incomingData.messages.length : 0,\n    userMessageCount: incomingData.messages ? incomingData.messages.filter(m => m.role === 'user').length : 0,\n    assistantMessageCount: incomingData.messages ? incomingData.messages.filter(m => m.role === 'assistant').length : 0,\n    conversationText: incomingData.messages ? incomingData.messages.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\\n\\n') : '',\n    originalMessages: incomingData.messages,\n    rawData: incomingData\n};\n\nreturn [{ json: processedData }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0],
+      "id": "code-processor",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Please evaluate this conversation between a user and an AI assistant. Analyze it on 6 criteria (1-10 scale):\n\nConversation to evaluate:\n{{ $json.conversationText }}\n\nAdditional context:\n- Total messages: {{ $json.messageCount }}\n- User messages: {{ $json.userMessageCount }}  \n- AI messages: {{ $json.assistantMessageCount }}\n- Session duration: {{ $json.duration }}ms\n- Session ID: {{ $json.sessionId }}\n\nEvaluate on these criteria (1-10 scale):\n- HELPFULNESS: Did the AI provide useful, actionable assistance?\n- ACCURACY: Were the AI's responses factually correct and reliable?\n- CLARITY: Were responses clear, well-structured, and easy to understand?\n- RELEVANCE: Did responses directly address the user's questions/needs?\n- TONE: Was the AI's tone appropriate, professional, and engaging?\n- COMPLETENESS: Did responses fully address questions without leaving gaps?\n\nReturn as JSON:\n{\n  \"helpfulness\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"accuracy\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"clarity\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"relevance\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"tone\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"completeness\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"overall_score\": X.X,\n  \"key_insights\": \"what the AI did well and key strengths\",\n  \"improvement_suggestions\": \"specific, actionable improvements\",\n  \"conversation_summary\": \"brief summary of the interaction\"\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [440, -100],
+      "id": "gpt-agent",
+      "name": "GPT Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Please evaluate this conversation between a user and an AI assistant. Analyze it on 6 criteria (1-10 scale):\n\nConversation to evaluate:\n{{ $json.conversationText }}\n\nAdditional context:\n- Total messages: {{ $json.messageCount }}\n- User messages: {{ $json.userMessageCount }}  \n- AI messages: {{ $json.assistantMessageCount }}\n- Session duration: {{ $json.duration }}ms\n- Session ID: {{ $json.sessionId }}\n\nEvaluate on these criteria (1-10 scale):\n- HELPFULNESS: Did the AI provide useful, actionable assistance?\n- ACCURACY: Were the AI's responses factually correct and reliable?\n- CLARITY: Were responses clear, well-structured, and easy to understand?\n- RELEVANCE: Did responses directly address the user's questions/needs?\n- TONE: Was the AI's tone appropriate, professional, and engaging?\n- COMPLETENESS: Did responses fully address questions without leaving gaps?\n\nReturn as JSON:\n{\n  \"helpfulness\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"accuracy\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"clarity\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"relevance\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"tone\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"completeness\": {\"score\": X, \"reason\": \"specific explanation\"},\n  \"overall_score\": X.X,\n  \"key_insights\": \"what the AI did well and key strengths\",\n  \"improvement_suggestions\": \"specific, actionable improvements\",\n  \"conversation_summary\": \"brief summary of the interaction\"\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [440, 100],
+      "id": "claude-agent",
+      "name": "Claude Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [300, -250],
+      "id": "openai-chat-model",
+      "name": "OpenAI Chat Model",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "model": "claude-3-5-sonnet-20241022",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.2,
+      "position": [300, 250],
+      "id": "anthropic-chat-model",
+      "name": "Anthropic Chat Model",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"helpfulness\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"accuracy\": {\n      \"type\": \"object\", \n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"clarity\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"relevance\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"tone\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"completeness\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"overall_score\": {\"type\": \"number\"},\n    \"key_insights\": {\"type\": \"string\"},\n    \"improvement_suggestions\": {\"type\": \"string\"},\n    \"conversation_summary\": {\"type\": \"string\"}\n  },\n  \"required\": [\"helpfulness\", \"accuracy\", \"clarity\", \"relevance\", \"tone\", \"completeness\", \"overall_score\", \"key_insights\", \"improvement_suggestions\", \"conversation_summary\"]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [580, -250],
+      "id": "gpt-output-parser",
+      "name": "GPT Output Parser"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"helpfulness\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"accuracy\": {\n      \"type\": \"object\", \n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"clarity\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"relevance\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"tone\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"completeness\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\"type\": \"number\"},\n        \"reason\": {\"type\": \"string\"}\n      },\n      \"required\": [\"score\", \"reason\"]\n    },\n    \"overall_score\": {\"type\": \"number\"},\n    \"key_insights\": {\"type\": \"string\"},\n    \"improvement_suggestions\": {\"type\": \"string\"},\n    \"conversation_summary\": {\"type\": \"string\"}\n  },\n  \"required\": [\"helpfulness\", \"accuracy\", \"clarity\", \"relevance\", \"tone\", \"completeness\", \"overall_score\", \"key_insights\", \"improvement_suggestions\", \"conversation_summary\"]\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [580, 250],
+      "id": "claude-output-parser",
+      "name": "Claude Output Parser"
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [700, 0],
+      "id": "merge-results",
+      "name": "Merge Results"
+    },
+    {
+      "parameters": {
+        "jsCode": "// FIXED DUAL LLM COMPARISON MERGE CODE\n// Get original session data from Code node\nconst originalData = $('Code').first().json;\n\n// FIXED: Properly access the structured output from AI Agent nodes with append merge\nconst allInputs = $input.all();\nconst gptResults = allInputs[0].json;\nconst claudeResults = allInputs[1].json;\n\n// Add debugging to see the actual data structure\nconsole.log('=== DEBUGGING DATA STRUCTURE ===');\nconsole.log('GPT Results Keys:', Object.keys(gptResults));\nconsole.log('Claude Results Keys:', Object.keys(claudeResults));\nconsole.log('GPT Results Sample:', JSON.stringify(gptResults, null, 2).substring(0, 500));\nconsole.log('Claude Results Sample:', JSON.stringify(claudeResults, null, 2).substring(0, 500));\n\n// Helper function to safely access nested properties\nfunction safeAccess(obj, path, defaultValue = null) {\n  try {\n    return path.split('.').reduce((current, key) => current && current[key], obj) || defaultValue;\n  } catch (e) {\n    console.log(`Error accessing ${path}:`, e.message);\n    return defaultValue;\n  }\n}\n\n// Helper function to calculate score differences and agreement\nfunction calculateComparison(gptScore, claudeScore) {\n  const difference = Math.abs(gptScore - claudeScore);\n  let agreement;\n  if (difference <= 1) agreement = 'High';\n  else if (difference <= 2) agreement = 'Medium';\n  else agreement = 'Low';\n  \n  return {\n    difference: difference.toFixed(1),\n    agreement: agreement,\n    gpt_higher: gptScore > claudeScore,\n    claude_higher: claudeScore > gptScore\n  };\n}\n\n// Safely extract scores - try multiple possible data structures\nfunction extractScore(results, metric) {\n  const possiblePaths = [\n    `${metric}.score`,\n    `output.${metric}.score`,\n    `parsed.${metric}.score`,\n    `result.${metric}.score`,\n    metric\n  ];\n  \n  for (const path of possiblePaths) {\n    const score = safeAccess(results, path);\n    if (score !== null && typeof score === 'number') {\n      return score;\n    }\n  }\n  \n  console.log(`Warning: Could not find score for ${metric}`);\n  return 5; // Default score if not found\n}\n\nfunction extractReason(results, metric) {\n  const possiblePaths = [\n    `${metric}.reason`,\n    `output.${metric}.reason`,\n    `parsed.${metric}.reason`,\n    `result.${metric}.reason`\n  ];\n  \n  for (const path of possiblePaths) {\n    const reason = safeAccess(results, path);\n    if (reason && typeof reason === 'string') {\n      return reason.substring(0, 2000);\n    }\n  }\n  \n  return `Evaluation for ${metric}`;\n}\n\nfunction extractOverallScore(results) {\n  const possiblePaths = [\n    'overall_score',\n    'output.overall_score',\n    'parsed.overall_score',\n    'result.overall_score'\n  ];\n  \n  for (const path of possiblePaths) {\n    const score = safeAccess(results, path);\n    if (score !== null && typeof score === 'number') {\n      return score;\n    }\n  }\n  \n  console.log('Warning: Could not find overall_score');\n  return 7.5; // Default overall score\n}\n\nfunction extractStringField(results, field) {\n  const possiblePaths = [\n    field,\n    `output.${field}`,\n    `parsed.${field}`,\n    `result.${field}`\n  ];\n  \n  for (const path of possiblePaths) {\n    const value = safeAccess(results, path);\n    if (value && typeof value === 'string') {\n      return value.substring(0, 2000);\n    }\n  }\n  \n  return `Generated ${field}`;\n}\n\n// Calculate detailed comparisons for each metric\nconst metrics = ['helpfulness', 'accuracy', 'clarity', 'relevance', 'tone', 'completeness'];\nconst comparisons = {};\nlet totalDifference = 0;\nlet highAgreements = 0;\n\n// Extract scores safely\nconst gptScores = {};\nconst claudeScores = {};\n\nmetrics.forEach(metric => {\n  gptScores[metric] = extractScore(gptResults, metric);\n  claudeScores[metric] = extractScore(claudeResults, metric);\n  \n  const comparison = calculateComparison(gptScores[metric], claudeScores[metric]);\n  comparisons[metric] = comparison;\n  totalDifference += parseFloat(comparison.difference);\n  if (comparison.agreement === 'High') highAgreements++;\n  \n  console.log(`${metric}: GPT=${gptScores[metric]}, Claude=${claudeScores[metric]}, Diff=${comparison.difference}`);\n});\n\n// Calculate overall metrics\nconst overallAgreementRate = ((highAgreements / metrics.length) * 100).toFixed(1);\nconst averageDifference = parseFloat((totalDifference / metrics.length).toFixed(2));\n\nconst gptOverallScore = extractOverallScore(gptResults);\nconst claudeOverallScore = extractOverallScore(claudeResults);\nconst overallComparison = calculateComparison(gptOverallScore, claudeOverallScore);\n\n// Determine which LLM scored higher overall\nconst gptTotalScore = metrics.reduce((sum, metric) => sum + gptScores[metric], 0);\nconst claudeTotalScore = metrics.reduce((sum, metric) => sum + claudeScores[metric], 0);\nconst higherScoringLLM = gptTotalScore > claudeTotalScore ? 'GPT-3.5' : \n                        claudeTotalScore > gptTotalScore ? 'Claude-3.5' : 'Tie';\n\n// Create GPT Database Entry\nconst gptDatabaseData = {\n  sessionId: originalData.sessionId,\n  timestamp: originalData.timestamp,\n  userId: originalData.userId || 'anonymous',\n  duration: originalData.duration || 0,\n  messageCount: originalData.messageCount || 0,\n  userMessageCount: originalData.userMessageCount || 0,\n  assistantMessageCount: originalData.assistantMessageCount || 0,\n  model: 'GPT-3.5-turbo',\n  evaluator: 'GPT-3.5-turbo',\n  helpfulness: gptScores.helpfulness,\n  accuracy: gptScores.accuracy,\n  clarity: gptScores.clarity,\n  relevance: gptScores.relevance,\n  tone: gptScores.tone,\n  completeness: gptScores.completeness,\n  overall_score: gptOverallScore,\n  helpfulness_reason: extractReason(gptResults, 'helpfulness'),\n  accuracy_reason: extractReason(gptResults, 'accuracy'),\n  clarity_reason: extractReason(gptResults, 'clarity'),\n  relevance_reason: extractReason(gptResults, 'relevance'),\n  tone_reason: extractReason(gptResults, 'tone'),\n  completeness_reason: extractReason(gptResults, 'completeness'),\n  key_insights: extractStringField(gptResults, 'key_insights'),\n  improvement_suggestions: extractStringField(gptResults, 'improvement_suggestions'),\n  conversation_summary: extractStringField(gptResults, 'conversation_summary'),\n  compared_against: 'Claude-3.5-Sonnet',\n  overall_agreement: overallAgreementRate + '%',\n  avg_score_difference: averageDifference,\n  higher_scoring: higherScoringLLM === 'GPT-3.5' ? 'This Model' : \n                  higherScoringLLM === 'Claude-3.5' ? 'Competitor' : 'Tie',\n  helpfulness_vs_claude: comparisons.helpfulness.difference,\n  accuracy_vs_claude: comparisons.accuracy.difference,\n  clarity_vs_claude: comparisons.clarity.difference,\n  relevance_vs_claude: comparisons.relevance.difference,\n  tone_vs_claude: comparisons.tone.difference,\n  completeness_vs_claude: comparisons.completeness.difference,\n  helpfulness_agreement: comparisons.helpfulness.agreement,\n  accuracy_agreement: comparisons.accuracy.agreement,\n  clarity_agreement: comparisons.clarity.agreement,\n  relevance_agreement: comparisons.relevance.agreement,\n  tone_agreement: comparisons.tone.agreement,\n  completeness_agreement: comparisons.completeness.agreement\n};\n\n// Create Claude Database Entry\nconst claudeDatabaseData = {\n  sessionId: originalData.sessionId,\n  timestamp: originalData.timestamp,\n  userId: originalData.userId || 'anonymous',\n  duration: originalData.duration || 0,\n  messageCount: originalData.messageCount || 0,\n  userMessageCount: originalData.userMessageCount || 0,\n  assistantMessageCount: originalData.assistantMessageCount || 0,\n  model: 'Claude-3.5-Sonnet',\n  evaluator: 'Claude-3.5-Sonnet',\n  helpfulness: claudeScores.helpfulness,\n  accuracy: claudeScores.accuracy,\n  clarity: claudeScores.clarity,\n  relevance: claudeScores.relevance,\n  tone: claudeScores.tone,\n  completeness: claudeScores.completeness,\n  overall_score: claudeOverallScore,\n  helpfulness_reason: extractReason(claudeResults, 'helpfulness'),\n  accuracy_reason: extractReason(claudeResults, 'accuracy'),\n  clarity_reason: extractReason(claudeResults, 'clarity'),\n  relevance_reason: extractReason(claudeResults, 'relevance'),\n  tone_reason: extractReason(claudeResults, 'tone'),\n  completeness_reason: extractReason(claudeResults, 'completeness'),\n  key_insights: extractStringField(claudeResults, 'key_insights'),\n  improvement_suggestions: extractStringField(claudeResults, 'improvement_suggestions'),\n  conversation_summary: extractStringField(claudeResults, 'conversation_summary'),\n  compared_against: 'GPT-3.5-turbo',\n  overall_agreement: overallAgreementRate + '%',\n  avg_score_difference: averageDifference,\n  higher_scoring: higherScoringLLM === 'Claude-3.5' ? 'This Model' : \n                  higherScoringLLM === 'GPT-3.5' ? 'Competitor' : 'Tie',\n  helpfulness_vs_gpt: comparisons.helpfulness.difference,\n  accuracy_vs_gpt: comparisons.accuracy.difference,\n  clarity_vs_gpt: comparisons.clarity.difference,\n  relevance_vs_gpt: comparisons.relevance.difference,\n  tone_vs_gpt: comparisons.tone.difference,\n  completeness_vs_gpt: comparisons.completeness.difference,\n  helpfulness_agreement: comparisons.helpfulness.agreement,\n  accuracy_agreement: comparisons.accuracy.agreement,\n  clarity_agreement: comparisons.clarity.agreement,\n  relevance_agreement: comparisons.relevance.agreement,\n  tone_agreement: comparisons.tone.agreement,\n  completeness_agreement: comparisons.completeness.agreement\n};\n\n// Log detailed comparison for debugging\nconsole.log('=== DUAL LLM COMPARISON ANALYSIS ===');\nconsole.log('Session:', originalData.sessionId);\nconsole.log('GPT Total Score:', gptTotalScore.toFixed(1));\nconsole.log('Claude Total Score:', claudeTotalScore.toFixed(1));\nconsole.log('Higher Scoring LLM:', higherScoringLLM);\nconsole.log('Agreement Rate:', overallAgreementRate + '%');\nconsole.log('Average Difference:', averageDifference);\nconsole.log('GPT Database Data Keys:', Object.keys(gptDatabaseData));\nconsole.log('Claude Database Data Keys:', Object.keys(claudeDatabaseData));\n\n// Return both datasets for separate Notion databases\nreturn [\n  { json: gptDatabaseData, pairedItem: 0 },\n  { json: claudeDatabaseData, pairedItem: 1 }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 0],
+      "id": "comparison-merge",
+      "name": "Comparison Logic"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "https://www.notion.so/2260a4634b4e81618e72dd644e0a718f",
+          "mode": "url"
+        },
+        "title": "GPT Evaluation Results",
+        "simple": false,
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Session ID|title",
+              "title": "={{ $json.sessionId }}"
+            },
+            {
+              "key": "Model|select",
+              "selectValue": "={{ $json.model }}"
+            },
+            {
+              "key": "Overall Score|number",
+              "numberValue": "={{ $json.overall_score }}"
+            },
+            {
+              "key": "Performance Winner|select",
+              "selectValue": "={{ $json.higher_scoring }}"
+            },
+            {
+              "key": "Agreement Rate|rich_text",
+              "textContent": "={{ $json.overall_agreement }}"
+            },
+            {
+              "key": "Avg Score Difference|number",
+              "numberValue": "={{ $json.avg_score_difference }}"
+            },
+            {
+              "key": "Helpfulness|number",
+              "numberValue": "={{ $json.helpfulness }}"
+            },
+            {
+              "key": "Accuracy|number",
+              "numberValue": "={{ $json.accuracy }}"
+            },
+            {
+              "key": "Clarity|number",
+              "numberValue": "={{ $json.clarity }}"
+            },
+            {
+              "key": "Relevance|number",
+              "numberValue": "={{ $json.relevance }}"
+            },
+            {
+              "key": "Tone|number",
+              "numberValue": "={{ $json.tone }}"
+            },
+            {
+              "key": "Completeness|number",
+              "numberValue": "={{ $json.completeness }}"
+            },
+            {
+              "key": "Key Insights|rich_text",
+              "textContent": "={{ $json.key_insights }}"
+            },
+            {
+              "key": "Timestamp|date",
+              "date": "={{ $json.timestamp }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1120, -100],
+      "id": "gpt-notion-database",
+      "name": "GPT Notion Database",
+      "credentials": {
+        "notionApi": {
+          "id": "Notion_Cursor",
+          "name": "Notion_Cursor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "https://www.notion.so/2260a4634b4e8154b338d3643dc353b9",
+          "mode": "url"
+        },
+        "title": "Claude Evaluation Results",
+        "simple": false,
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Session ID|title",
+              "title": "={{ $json.sessionId }}"
+            },
+            {
+              "key": "Model|select",
+              "selectValue": "={{ $json.model }}"
+            },
+            {
+              "key": "Overall Score|number",
+              "numberValue": "={{ $json.overall_score }}"
+            },
+            {
+              "key": "Performance Winner|select",
+              "selectValue": "={{ $json.higher_scoring }}"
+            },
+            {
+              "key": "Agreement Rate|rich_text",
+              "textContent": "={{ $json.overall_agreement }}"
+            },
+            {
+              "key": "Avg Score Difference|number",
+              "numberValue": "={{ $json.avg_score_difference }}"
+            },
+            {
+              "key": "Helpfulness|number",
+              "numberValue": "={{ $json.helpfulness }}"
+            },
+            {
+              "key": "Accuracy|number",
+              "numberValue": "={{ $json.accuracy }}"
+            },
+            {
+              "key": "Clarity|number",
+              "numberValue": "={{ $json.clarity }}"
+            },
+            {
+              "key": "Relevance|number",
+              "numberValue": "={{ $json.relevance }}"
+            },
+            {
+              "key": "Tone|number",
+              "numberValue": "={{ $json.tone }}"
+            },
+            {
+              "key": "Completeness|number",
+              "numberValue": "={{ $json.completeness }}"
+            },
+            {
+              "key": "Key Insights|rich_text",
+              "textContent": "={{ $json.key_insights }}"
+            },
+            {
+              "key": "Timestamp|date",
+              "date": "={{ $json.timestamp }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1120, 100],
+      "id": "claude-notion-database",
+      "name": "Claude Notion Database",
+      "credentials": {
+        "notionApi": {
+          "id": "Notion_Cursor",
+          "name": "Notion_Cursor"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "GPT Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Claude Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "GPT Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Claude Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "GPT Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Claude Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Comparison Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comparison Logic": {
+      "main": [
+        [
+          {
+            "node": "GPT Notion Database",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Claude Notion Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+} 
